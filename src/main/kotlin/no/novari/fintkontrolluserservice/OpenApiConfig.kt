@@ -23,9 +23,9 @@ import org.springframework.context.annotation.Configuration
 @OpenAPIDefinition(
     security = [SecurityRequirement(name = "bearer-jwt")],
     info = Info(
-        title = "Kontroll Kotlin-template",
+        title = "Kontroll fint-kontroll-user-service",
         version = "0.0.1",
-        description = "REST API for Kotlin-template",
+        description = "REST API for fint-kontroll-user-service",
         license = License(name = "MIT")
     )
 )
