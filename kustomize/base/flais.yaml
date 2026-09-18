@@ -1,11 +1,19 @@
 apiVersion: fintlabs.no/v1alpha1
 kind: Application
 metadata:
-  name: fint-kontroll-device-catalog
+  name: fint-kontroll-user-service
   namespace: fintlabs-no
+labels:
+  app.kubernetes.io/name: fint-kontroll-user-service
+  app.kubernetes.io/instance: fint-kontroll-user-service_fintlabs_no
+  app.kubernetes.io/version: latest
+  app.kubernetes.io/component: backend
+  app.kubernetes.io/part-of: fint-kontroll
+  fintlabs.no/team: bas
+  fintlabs.no/org-id: fintlabs.no
 spec:
   orgId: fintlabs.no
-  image: ghcr.io/fintlabs/fint-kontroll-device-catalog:latest
+  image: ghcr.io/fintlabs/fint-kontroll-user-service:latest
   imagePullPolicy: Always
   url:
     hostname: kontroll.vigo.no
@@ -26,11 +34,11 @@ spec:
     database: fint-kontroll
   env:
     - name: fint.kontroll.authorization.authorized-role
-      value: "https://role-catalog.vigoiks.no/vigo/kontroll/user"
+      value: "0 - https://role-catalog.vigoiks.no/vigo/kontroll/user"
     - name: fint.kontroll.authorization.authorized-org-id
-      value: "vigo.no"
+      value: "1 - vigo.no"
     - name: spring.kafka.consumer.group-id
-      value: 'fint-kontroll-device-catalog'
+      value: '2 - fint-kontroll-user-service'
 
   observability:
     metrics:

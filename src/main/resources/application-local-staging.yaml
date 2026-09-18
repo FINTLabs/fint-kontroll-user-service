@@ -1,6 +1,6 @@
 fint:
   org-id: fintlabs.no
-  application-id: fint-kontroll-template
+  application-id: fint-kontroll-user-service
   kontroll:
     opa:
       url: http://localhost:8181/v1/data/accessmanagement
@@ -21,27 +21,27 @@ novari:
     topic:
       org-id: fintlabs-no
       domain-context: kontroll
-    application-id: fint-kontroll-template
+    application-id: fint-kontroll-user-service
 
 
 spring:
   application:
-    name: fint-kontroll-template
+    name: fint-kontroll-user-service
 #  datasource:
 #    url: jdbc:postgresql://localhost:5432/postgres
 #    username: postgres
 #    password: postgres
 #    hikari:
-#      schema: device
+#      schema: users
   kafka:
     consumer:
-      group-id: fint-kontroll-device-catalog
+      group-id: fint-kontroll-user-service
 #  jpa:
 #    hibernate:
 #      ddl-auto: none
 #    properties:
 #      hibernate:
-#        default_schema: device
+#        default_schema: user
   security:
     oauth2:
       resourceserver:

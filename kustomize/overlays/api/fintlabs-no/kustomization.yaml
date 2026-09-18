@@ -3,14 +3,15 @@ kind: Kustomization
 namespace: fintlabs-no
 resources:
   - ../../../base
-commonLabels:
-  app.kubernetes.io/name: fint-kontroll-device-catalog
-  app.kubernetes.io/instance: fint-kontroll-device-catalog_fintlabs_no
-  app.kubernetes.io/version: latest
-  app.kubernetes.io/component: backend
-  app.kubernetes.io/part-of: fint-kontroll
-  fintlabs.no/team: bas
-  fintlabs.no/org-id: fintlabs.no
+labels:
+  - pairs:
+      app.kubernetes.io/name: fint-kontroll-user-service
+      app.kubernetes.io/instance: fint-kontroll-user-service_fintlabs_no
+      app.kubernetes.io/version: latest
+      app.kubernetes.io/component: backend
+      app.kubernetes.io/part-of: fint-kontroll
+      fintlabs.no/team: bas
+      fintlabs.no/org-id: fintlabs.no
 patches:
   - patch: |-
       - op: replace
@@ -39,13 +40,13 @@ patches:
         value: "vigo.no"
       - op: replace
         path: "/spec/env/2/value"
-        value: "fint-kontroll-device-catalog"
+        value: "fint-kontroll-user-service"
       - op: replace
         path: "/spec/observability/metrics/path"
         value: "/fintlabs-no/actuator/prometheus"
     target:
       kind: Application
-      name: fint-kontroll-device-catalog
+      name: fint-kontroll-user-service
 
 
 

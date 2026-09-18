@@ -22,7 +22,7 @@ novari:
 
 spring:
   application:
-    name: fint-kontroll-device-catalog
+    name: fint-kontroll-user-service
   security:
     oauth2:
       resourceserver:
