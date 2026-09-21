@@ -37,6 +37,8 @@ dependencies {
     implementation("no.novari:flyt-cache:2.0.1")
     implementation("no.fintlabs:fint-kontroll-auth:1.3.8")
     implementation("no.fintlabs:fint-resource-server-security:1.1.0")
+    implementation("no.novari:fint-administrasjon-resource-model-java:4.1.0")
+    implementation("no.novari:fint-utdanning-resource-model-java:4.1.0")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
 
     runtimeOnly("org.postgresql:postgresql")
