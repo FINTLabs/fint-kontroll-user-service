@@ -22,15 +22,14 @@ class KafkaConsumer(
     private val containerFactory: KafkaContainerFactory,
     private val organisasjonselementResourceCache: FintCache<String, OrganisasjonselementResource>,
     private val personalressursResourceCache: FintCache<String, PersonalressursResource>,
-    private val ansattPersonResourceCache: FintCache<String, PersonResource>,
+    private val personResourceCache: FintCache<String, PersonResource>,
     private val arbeidsforholdResourceCache: FintCache<String, ArbeidsforholdResource>,
     private val elevResourceCache: FintCache<String, ElevResource>,
-    private val elevPersonCache: FintCache<String, PersonResource>,
     private val elevforholdCache: FintCache<String, ElevforholdResource>,
     private val skoleResourceCache: FintCache<String, SkoleResource>,
     private val ansattSkoleressursResourceCache: FintCache<String, SkoleressursResource>,
     private val graphUserCache: FintCache<String, EntraUser>,
-    private val graphUserExternalCache: FintCache<String, EntraUserExternal>
+    private val graphUserExternalCache: FintCache<String, EntraUserExternal>,
 ) {
     @Bean
     fun organisasjonselementConsumer() =
@@ -61,7 +60,7 @@ class KafkaConsumer(
         containerFactory.createContainer(
             topicName = "administrasjon-personal-person",
             consumingClass = PersonResource::class,
-            cache = ansattPersonResourceCache,
+            cache = personResourceCache,
             handler = { key, value ->
                 logger.info("Consumed:: ansatt person :: $key :: ${value.navn ?: "no name"}")
             },
@@ -74,7 +73,8 @@ class KafkaConsumer(
             consumingClass = ArbeidsforholdResource::class,
             cache = arbeidsforholdResourceCache,
             handler = { key, value ->
-                logger.info("Consumed:: arbeidsforhold :: $key :: ${value.systemId.identifikatorverdi ?: "no systemId"}")
+                logger
+                    .info("Consumed:: arbeidsforhold :: $key :: ${value.systemId.identifikatorverdi ?: "no systemId"}")
             },
         )
 
@@ -85,7 +85,7 @@ class KafkaConsumer(
             consumingClass = ElevResource::class,
             cache = elevResourceCache,
             handler = { key, value ->
-                logger.info("Consumed:: elev :: $key :: ${value.brukernavn.identifikatorverdi ?: "no brukernavn"}")
+                logger.info("Consumed:: elev :: $key :: ${value.elevnummer.identifikatorverdi ?: "no elevnummer"}")
             },
         )
 
@@ -94,7 +94,7 @@ class KafkaConsumer(
         containerFactory.createContainer(
             topicName = "utdanning-elev-person",
             consumingClass = PersonResource::class,
-            cache = elevPersonCache,
+            cache = personResourceCache,
             handler = { key, value ->
                 logger.info("Consumed:: elevperson :: $key :: ${value.navn ?: "no name"}")
             },
@@ -140,7 +140,7 @@ class KafkaConsumer(
             consumingClass = EntraUser::class,
             cache = graphUserCache,
             handler = { key, value ->
-                logger.info("Consumed:: entra user :: $key :: ${value.userPrincipalName ?: "no userprincipalname"}")
+                logger.info("Consumed:: entra user :: $key :: ${value.userPrincipalName}")
             },
         )
 
@@ -151,8 +151,7 @@ class KafkaConsumer(
             consumingClass = EntraUserExternal::class,
             cache = graphUserExternalCache,
             handler = { key, value ->
-                logger.info("Consumed:: entra user external :: $key :: ${value.userPrincipalName ?: "no userprincipalname"}")
-            }
+                logger.info("Consumed:: entra user external :: $key :: ${value.userPrincipalName}")
+            },
         )
-
 }
