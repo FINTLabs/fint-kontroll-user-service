@@ -25,7 +25,7 @@ class KafkaContainerFactory(
         topicName: String,
         consumingClass: KClass<T>,
         cache: FintCache<String, T>,
-        handler: (String, T) -> Unit = { _, _ -> },
+        handler: (String, T?) -> Unit = { _, _ -> },
     ): ConcurrentMessageListenerContainer<String, T> {
         val nameParameters =
             EntityTopicNameParameters
@@ -65,8 +65,13 @@ class KafkaContainerFactory(
                     val key = FintLinkUtils.getSystemIdFromMessageKey(record.key())
                     val value = record.value()
 
-                    cache.put(key, value)
-                    logger.debug("$topicName :: Added $key to cache from record key: ${record.key()}")
+                    if (value == null) {
+                        cache.remove(key)
+                        logger.debug("$topicName :: Removed $key from cache after tombstone")
+                    } else {
+                        cache.put(key, value)
+                        logger.debug("$topicName :: Added $key to cache from record key: ${record.key()}")
+                    }
 
                     handler(key, value)
                 },

@@ -54,6 +54,9 @@ class CacheConfiguration(
     @Bean
     fun graphUserExternalCache(): FintCache<String, EntraUserExternal> = createCache(EntraUserExternal::class.java)
 
+    @Bean
+    fun employeeInSchoolCache(): FintCache<String, Long> = createCache(Long::class.java)
+
     fun <V : Any> createCache(resourceClass: Class<V>) =
         fintCacheManager.createCache(
             resourceClass.name.lowercase(Locale.ROOT),

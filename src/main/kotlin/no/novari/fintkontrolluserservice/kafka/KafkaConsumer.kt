@@ -11,6 +11,8 @@ import no.novari.fint.model.resource.utdanning.elev.SkoleressursResource
 import no.novari.fint.model.resource.utdanning.utdanningsprogram.SkoleResource
 import no.novari.fintkontrolluserservice.entra.EntraUser
 import no.novari.fintkontrolluserservice.entra.EntraUserExternal
+import no.novari.fintkontrolluserservice.user.ExternalUserService
+import no.novari.fintkontrolluserservice.user.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -30,6 +32,8 @@ class KafkaConsumer(
     private val ansattSkoleressursResourceCache: FintCache<String, SkoleressursResource>,
     private val graphUserCache: FintCache<String, EntraUser>,
     private val graphUserExternalCache: FintCache<String, EntraUserExternal>,
+    private val userService: UserService,
+    private val externalUserService: ExternalUserService,
 ) {
     @Bean
     fun organisasjonselementConsumer() =
@@ -38,7 +42,7 @@ class KafkaConsumer(
             consumingClass = OrganisasjonselementResource::class,
             cache = organisasjonselementResourceCache,
             handler = { key, value ->
-                logger.info("Consumed:: organisasjonselement ::  $key :: ${value.navn ?: "no navn"}")
+                logger.debug("Consumed:: organisasjonselement ::  $key :: ${value?.navn ?: "deleted"}")
                 // TODO: create handler
             },
         )
@@ -50,7 +54,8 @@ class KafkaConsumer(
             consumingClass = PersonalressursResource::class,
             cache = personalressursResourceCache,
             handler = { key, value ->
-                logger.info("Consumed:: personalressurs ::  $key :: ${value.ansattnummer ?: "no employeeNumber"}")
+                if (value == null) userService.markDeleted(key)
+                logger.debug("Consumed:: personalressurs ::  $key :: ${value?.ansattnummer ?: "deleted"}")
                 // TODO: create handler
             },
         )
@@ -62,7 +67,7 @@ class KafkaConsumer(
             consumingClass = PersonResource::class,
             cache = personResourceCache,
             handler = { key, value ->
-                logger.info("Consumed:: ansatt person :: $key :: ${value.navn ?: "no name"}")
+                logger.debug("Consumed:: ansatt person :: $key :: ${value?.navn ?: "deleted"}")
             },
         )
 
@@ -74,7 +79,7 @@ class KafkaConsumer(
             cache = arbeidsforholdResourceCache,
             handler = { key, value ->
                 logger
-                    .info("Consumed:: arbeidsforhold :: $key :: ${value.systemId.identifikatorverdi ?: "no systemId"}")
+                    .info("Consumed:: arbeidsforhold :: $key :: ${value?.systemId?.identifikatorverdi ?: "deleted"}")
             },
         )
 
@@ -85,7 +90,8 @@ class KafkaConsumer(
             consumingClass = ElevResource::class,
             cache = elevResourceCache,
             handler = { key, value ->
-                logger.info("Consumed:: elev :: $key :: ${value.elevnummer.identifikatorverdi ?: "no elevnummer"}")
+                if (value == null) userService.markDeleted(key)
+                logger.debug("Consumed:: elev :: $key :: ${value?.elevnummer?.identifikatorverdi ?: "deleted"}")
             },
         )
 
@@ -96,7 +102,7 @@ class KafkaConsumer(
             consumingClass = PersonResource::class,
             cache = personResourceCache,
             handler = { key, value ->
-                logger.info("Consumed:: elevperson :: $key :: ${value.navn ?: "no name"}")
+                logger.debug("Consumed:: elevperson :: $key :: ${value?.navn ?: "deleted"}")
             },
         )
 
@@ -107,7 +113,7 @@ class KafkaConsumer(
             consumingClass = ElevforholdResource::class,
             cache = elevforholdCache,
             handler = { key, value ->
-                logger.info("Consumed:: elevforhold :: $key :: ${value.systemId.identifikatorverdi ?: "no systemId"}")
+                logger.debug("Consumed:: elevforhold :: $key :: ${value?.systemId?.identifikatorverdi ?: "deleted"}")
             },
         )
 
@@ -118,7 +124,7 @@ class KafkaConsumer(
             consumingClass = SkoleResource::class,
             cache = skoleResourceCache,
             handler = { key, value ->
-                logger.info("Consumed:: skole :: $key :: ${value.navn ?: "no name"}")
+                logger.debug("Consumed:: skole :: $key :: ${value?.navn ?: "deleted"}")
             },
         )
 
@@ -129,7 +135,7 @@ class KafkaConsumer(
             consumingClass = SkoleressursResource::class,
             cache = ansattSkoleressursResourceCache,
             handler = { key, value ->
-                logger.info("Consumed:: ansatt skole :: $key :: ${value.systemId.identifikatorverdi ?: "no systemId"}")
+                logger.debug("Consumed:: ansatt skole :: $key :: ${value?.systemId?.identifikatorverdi ?: "deleted"}")
             },
         )
 
@@ -140,7 +146,20 @@ class KafkaConsumer(
             consumingClass = EntraUser::class,
             cache = graphUserCache,
             handler = { key, value ->
-                logger.info("Consumed:: entra user :: $key :: ${value.userPrincipalName}")
+                if (value == null) {
+                    graphUserCache.allDistinct
+                        .filter { it.id == key }
+                        .forEach { user ->
+                            listOfNotNull(user.employeeId, user.studentId).forEach { resourceId ->
+                                graphUserCache.remove(resourceId)
+                                userService.markDeleted(resourceId)
+                            }
+                        }
+                } else {
+                    value.employeeId?.let { graphUserCache.put(it, value) }
+                    value.studentId?.let { graphUserCache.put(it, value) }
+                    logger.debug("Consumed:: entra user :: $key :: ${value.userPrincipalName}")
+                }
             },
         )
 
@@ -151,7 +170,8 @@ class KafkaConsumer(
             consumingClass = EntraUserExternal::class,
             cache = graphUserExternalCache,
             handler = { key, value ->
-                logger.info("Consumed:: entra user external :: $key :: ${value.userPrincipalName}")
+                externalUserService.reconcile(key, value)
+                logger.debug("Consumed:: entra user external :: $key :: ${value?.userPrincipalName ?: "deleted"}")
             },
         )
 }

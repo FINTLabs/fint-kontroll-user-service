@@ -23,6 +23,13 @@ class FintLinkUtils {
                 ?: throw NoSuchLinkException.noLink(resource, linkedResourceName)
 
         @JvmStatic
+        fun getOptionalFirstLink(links: Collection<Link>?): String? =
+            links
+                ?.firstOrNull()
+                ?.href
+                ?.let(::systemIdToLowerCase)
+
+        @JvmStatic
         fun systemIdToLowerCase(path: String) = path.replace("systemId", "systemid")
 
         @JvmStatic
@@ -35,5 +42,8 @@ class FintLinkUtils {
                 ?.href
                 ?.let(this::systemIdToLowerCase)
                 ?: throw NoSuchLinkException.noSelfLink(resource)
+
+        @JvmStatic
+        fun resourceId(resource: FintLinks): String = getSystemIdFromMessageKey(getFirstSelfLink(resource))
     }
 }
