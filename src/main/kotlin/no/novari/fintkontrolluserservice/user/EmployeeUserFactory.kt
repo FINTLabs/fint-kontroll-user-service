@@ -8,6 +8,8 @@ import no.novari.fint.model.resource.administrasjon.personal.PersonalressursReso
 import no.novari.fint.model.resource.felles.PersonResource
 import no.novari.fint.model.resource.utdanning.elev.SkoleressursResource
 import no.novari.fintkontrolluserservice.FintLinkUtils
+import no.novari.fintkontrolluserservice.entra.EntraAttributes
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import java.util.Date
@@ -20,27 +22,49 @@ class EmployeeUserFactory(
     private val organisasjonselementResourceCache: FintCache<String, OrganisasjonselementResource>,
     private val ansattSkoleressursResourceCache: FintCache<String, SkoleressursResource>,
     private val entraUserService: EntraUserService,
-    private val validityPeriodService: ValidityPeriodService,
-    @Value("\${fint.kontroll.user.days-before-start-employee:0}") private val daysBeforeStart: Int,
+    private val gyldighetsPeriodeService: GyldighetsPeriodeService,
+    @Value($$"${fint.kontroll.user.days-before-start-employee:0}") private val daysBeforeStart: Int,
 ) {
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     fun all(now: Date): List<UserCandidate> =
         personalressursResourceCache.allDistinct
-            .filter { it.arbeidsforhold?.isNotEmpty() == true }
-            .mapNotNull { create(it, now) }
+            .filter { employee ->
+                if (employee.arbeidsforhold.isNullOrEmpty()) {
+                    logger.warn("Skipping employee without arbeidsforhold: resourceId={}", FintLinkUtils.resourceId(employee))
+                    false
+                } else {
+                    true
+                }
+            }.mapNotNull { create(it, now) }
 
     fun create(
         employee: PersonalressursResource,
         now: Date,
     ): UserCandidate? {
         val resourceId = FintLinkUtils.resourceId(employee)
+        var tempStatus: String? = null
         val person =
             employee.person
                 .firstOrNull()
                 ?.href
                 ?.let(FintLinkUtils::getSystemIdFromMessageKey)
                 ?.let { personResourceCache.getOptional(it).orElse(null) }
-                ?: return null
-        val entra = entraUserService.get(resourceId) ?: return null
+                ?: run {
+                    logger.warn("Person not found for resourceId: $resourceId . User not created")
+                    return null
+                }
+
+        val entraAttributes =
+            entraUserService.getEntraAttributes(resourceId) ?: run {
+                logger.warn("Entra user not found for resourceId: $resourceId")
+                EntraAttributes(
+                    email = null,
+                    userName = null,
+                    objectId = null,
+                    status = UserStatus.INVALID,
+                )
+            }
 
         val employments =
             employee.arbeidsforhold
@@ -48,48 +72,53 @@ class EmployeeUserFactory(
                 .mapNotNull(Link::getHref)
                 .map(FintLinkUtils::getSystemIdFromMessageKey)
                 .mapNotNull { arbeidsforholdResourceCache.getOptional(it).orElse(null) }
-                .filter { validityPeriodService.isValid(it.gyldighetsperiode, now, daysBeforeStart) }
+                .filter { gyldighetsPeriodeService.isValid(it.gyldighetsperiode, now, daysBeforeStart) }
 
         val mainEmployment =
             employments.firstOrNull { it.hovedstilling == true }
                 ?: employments.maxByOrNull { it.ansettelsesprosent ?: 0L }
-                ?: return null
+                ?: run {
+                    logger.warn("No main employment posision found for resourceId: $resourceId . Status set to INVALID")
+                    tempStatus = UserStatus.INVALID
+                    ArbeidsforholdResource()
+                }
 
-        val workPlaces = employments.mapNotNull(::workPlace).toSet()
-        val mainWorkPlace = workPlace(mainEmployment)
+        val workPlaces = employments.mapNotNull(::findArbeidssted).toSet()
+        val mainWorkPlace = findArbeidssted(mainEmployment)
         val managerRef = mainWorkPlace?.leder?.firstOrNull()?.href
         val period = employee.ansettelsesperiode
+        val fintStatus =
+            tempStatus ?: if (gyldighetsPeriodeService.isValid(
+                    period,
+                    now,
+                    daysBeforeStart,
+                )
+            ) {
+                UserStatus.ACTIVE
+            } else {
+                UserStatus.DISABLED
+            }
 
         return UserCandidate(
             resourceId = resourceId,
             firstName = person.navn?.fornavn,
             lastName = person.navn?.etternavn,
             userType = if (isSchoolEmployee(resourceId)) UserType.EMPLOYEEFACULTY else UserType.EMPLOYEESTAFF,
-            userName = entra.userName,
-            identityProviderUserObjectId = entra.objectId,
+            userName = entraAttributes.userName,
+            identityProviderUserObjectId = entraAttributes.objectId,
             mainOrganisationUnitName = mainWorkPlace?.navn,
             mainOrganisationUnitId = mainWorkPlace?.organisasjonsId?.identifikatorverdi,
             organisationUnitIds = workPlaces.mapNotNull { it.organisasjonsId?.identifikatorverdi }.toSet(),
-            email = entra.email,
+            email = entraAttributes.email,
             managerRef = managerRef,
-            fintStatus =
-                if (validityPeriodService.isValid(
-                        period,
-                        now,
-                        daysBeforeStart,
-                    )
-                ) {
-                    UserStatus.ACTIVE
-                } else {
-                    UserStatus.DISABLED
-                },
+            fintStatus = fintStatus,
             validFrom = period?.start,
             validTo = period?.slutt,
-            entraStatus = entra.status,
+            entraStatus = entraAttributes.status,
         )
     }
 
-    private fun workPlace(employment: ArbeidsforholdResource): OrganisasjonselementResource? =
+    private fun findArbeidssted(employment: ArbeidsforholdResource): OrganisasjonselementResource? =
         employment.arbeidssted
             ?.firstOrNull()
             ?.href

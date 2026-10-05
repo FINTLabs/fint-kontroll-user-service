@@ -25,7 +25,7 @@ class ExternalUserService(
                 ?: " (ekstern)"
         val objectId = externalUser.userObjectId ?: resourceId
 
-        userService.upsert(
+        userService.saveAndPublish(
             UserCandidate(
                 resourceId = resourceId,
                 firstName = externalUser.firstName,

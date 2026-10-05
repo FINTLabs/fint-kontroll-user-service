@@ -9,8 +9,8 @@ fint:
       authorized-org-id: vigo.no
     user:
       publishing:
-        initial-delay: PT3M
-        fixed-delay: PT1H
+        initial-delay: PT1M
+        fixed-delay: PT5M
       days-before-start-employee: 10
       days-before-start-student: 5
 

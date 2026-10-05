@@ -19,7 +19,7 @@ class StudentUserFactory(
     private val skoleResourceCache: FintCache<String, SkoleResource>,
     private val organisasjonselementResourceCache: FintCache<String, OrganisasjonselementResource>,
     private val entraUserService: EntraUserService,
-    private val validityPeriodService: ValidityPeriodService,
+    private val gyldighetsPeriodeService: GyldighetsPeriodeService,
     @Value("\${fint.kontroll.user.days-before-start-student:0}") private val daysBeforeStart: Int,
 ) {
     fun all(now: Date): List<UserCandidate> =
@@ -39,7 +39,7 @@ class StudentUserFactory(
                 ?.let(FintLinkUtils::getSystemIdFromMessageKey)
                 ?.let { personResourceCache.getOptional(it).orElse(null) }
                 ?: return null
-        val entra = entraUserService.get(resourceId) ?: return null
+        val entra = entraUserService.getEntraAttributes(resourceId) ?: return null
 
         val relationships =
             student.elevforhold
@@ -50,7 +50,7 @@ class StudentUserFactory(
                 .filter { it.gyldighetsperiode != null }
         val mainRelationship =
             relationships.firstOrNull {
-                validityPeriodService.isValid(it.gyldighetsperiode, now, daysBeforeStart)
+                gyldighetsPeriodeService.isValid(it.gyldighetsperiode, now, daysBeforeStart)
             } ?: relationships.firstOrNull() ?: return null
         val school =
             mainRelationship.skole
@@ -78,7 +78,7 @@ class StudentUserFactory(
             mainOrganisationUnitId = organisation.organisasjonsId?.identifikatorverdi,
             email = entra.email,
             fintStatus =
-                if (validityPeriodService.isValid(mainRelationship.gyldighetsperiode, now, daysBeforeStart)) {
+                if (gyldighetsPeriodeService.isValid(mainRelationship.gyldighetsperiode, now, daysBeforeStart)) {
                     UserStatus.ACTIVE
                 } else {
                     UserStatus.DISABLED

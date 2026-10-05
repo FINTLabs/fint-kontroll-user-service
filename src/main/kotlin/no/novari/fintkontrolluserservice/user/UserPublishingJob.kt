@@ -24,8 +24,9 @@ class UserPublishingJob(
     fun reconcileUsers() {
         val now = Date.from(Instant.now())
         val employees = employeeUserFactory.all(now)
-        val students = studentUserFactory.all(now)
-        (employees + students).forEach(userService::upsert)
+        // val students = studentUserFactory.all(now)
+        val students = emptyList<UserCandidate>()
+        (employees + students).forEach(userService::saveAndPublish)
         val disabled = userService.deactivateExpiredUsers()
         logger.info(
             "Reconciled {} employees, {} students; disabled {} expired users",

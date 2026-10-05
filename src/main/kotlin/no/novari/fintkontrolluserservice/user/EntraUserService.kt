@@ -1,22 +1,16 @@
 package no.novari.fintkontrolluserservice.user
 
 import no.novari.cache.FintCache
+import no.novari.fintkontrolluserservice.entra.EntraAttributes
 import no.novari.fintkontrolluserservice.entra.EntraUser
 import org.springframework.stereotype.Service
 import java.util.UUID
-
-data class EntraAttributes(
-    val email: String?,
-    val userName: String?,
-    val objectId: UUID?,
-    val status: String,
-)
 
 @Service
 class EntraUserService(
     private val graphUserCache: FintCache<String, EntraUser>,
 ) {
-    fun get(resourceId: String): EntraAttributes? = graphUserCache.getOptional(resourceId).orElse(null)?.toAttributes()
+    fun getEntraAttributes(resourceId: String): EntraAttributes? = graphUserCache.getOptional(resourceId).orElse(null)?.toAttributes()
 
     fun status(user: EntraUser): String =
         when {

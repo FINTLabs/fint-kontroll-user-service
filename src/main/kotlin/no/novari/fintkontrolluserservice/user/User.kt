@@ -14,7 +14,7 @@ import java.util.Date
 import java.util.UUID
 
 @Entity
-@Table(name = "users")
+@Table(name = "usersnew")
 data class User(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

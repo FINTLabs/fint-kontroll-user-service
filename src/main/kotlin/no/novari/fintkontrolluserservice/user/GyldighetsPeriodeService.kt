@@ -6,7 +6,7 @@ import java.util.Calendar
 import java.util.Date
 
 @Service
-class ValidityPeriodService {
+class GyldighetsPeriodeService {
     fun isValid(
         period: Periode?,
         now: Date,

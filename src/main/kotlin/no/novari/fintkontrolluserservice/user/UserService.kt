@@ -16,7 +16,7 @@ class UserService(
     private val logger = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    fun upsert(candidate: UserCandidate): User {
+    fun saveAndPublish(candidate: UserCandidate): User {
         val existing = userRepository.findByResourceIdIgnoreCase(candidate.resourceId)
         val user = existing ?: User(resourceId = candidate.resourceId)
         val previous = user.copy(organisationUnitIds = user.organisationUnitIds.toMutableSet())
@@ -143,6 +143,7 @@ class UserService(
 
     private fun statusFor(candidate: UserCandidate): String =
         when {
+            candidate.entraStatus == UserStatus.INVALID -> UserStatus.INVALID
             candidate.entraStatus == UserStatus.DELETED -> UserStatus.DELETED
             candidate.fintStatus == UserStatus.INVALID -> UserStatus.INVALID
             candidate.entraStatus == UserStatus.ACTIVE && candidate.fintStatus == UserStatus.ACTIVE -> UserStatus.ACTIVE

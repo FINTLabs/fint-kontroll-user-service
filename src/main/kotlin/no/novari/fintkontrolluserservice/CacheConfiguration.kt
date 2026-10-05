@@ -25,15 +25,13 @@ class CacheConfiguration(
         createCache(OrganisasjonselementResource::class.java)
 
     @Bean
-    fun personalressursResourceCache(): FintCache<String, PersonalressursResource> =
-        createCache(PersonalressursResource::class.java)
+    fun personalressursResourceCache(): FintCache<String, PersonalressursResource> = createCache(PersonalressursResource::class.java)
 
     @Bean
     fun personResourceCache(): FintCache<String, PersonResource> = createCache(PersonResource::class.java)
 
     @Bean
-    fun arbeidsforholdResourceCache(): FintCache<String, ArbeidsforholdResource> =
-        createCache(ArbeidsforholdResource::class.java)
+    fun arbeidsforholdResourceCache(): FintCache<String, ArbeidsforholdResource> = createCache(ArbeidsforholdResource::class.java)
 
     @Bean
     fun elevResourceCache(): FintCache<String, ElevResource> = createCache(ElevResource::class.java)
@@ -45,8 +43,7 @@ class CacheConfiguration(
     fun skoleResourceCache(): FintCache<String, SkoleResource> = createCache(SkoleResource::class.java)
 
     @Bean
-    fun ansattSkoleressursResourceCache(): FintCache<String, SkoleressursResource> =
-        createCache(SkoleressursResource::class.java)
+    fun ansattSkoleressursResourceCache(): FintCache<String, SkoleressursResource> = createCache(SkoleressursResource::class.java)
 
     @Bean
     fun graphUserCache(): FintCache<String, EntraUser> = createCache(EntraUser::class.java)
