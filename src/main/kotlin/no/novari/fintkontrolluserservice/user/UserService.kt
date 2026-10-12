@@ -39,7 +39,7 @@ class UserService(
 
         if (existing == null || user != previous) {
             val saved = userRepository.save(user)
-            logger.info(
+            logger.debug(
                 "{} user resourceId={}, status={}",
                 if (existing ==
                     null

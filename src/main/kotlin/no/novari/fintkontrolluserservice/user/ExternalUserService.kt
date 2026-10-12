@@ -8,7 +8,7 @@ import java.util.UUID
 class ExternalUserService(
     private val userService: UserService,
 ) {
-    fun reconcile(
+    fun saveAndPublish(
         resourceId: String,
         externalUser: EntraUserExternal?,
     ) {

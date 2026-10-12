@@ -170,7 +170,7 @@ class KafkaConsumer(
             consumingClass = EntraUserExternal::class,
             cache = graphUserExternalCache,
             handler = { key, value ->
-                externalUserService.reconcile(key, value)
+                externalUserService.saveAndPublish(key, value)
                 logger.debug("Consumed:: entra user external :: $key :: ${value?.userPrincipalName ?: "deleted"}")
             },
         )

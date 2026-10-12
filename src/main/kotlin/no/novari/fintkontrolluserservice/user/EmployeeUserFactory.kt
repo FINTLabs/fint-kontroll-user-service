@@ -31,7 +31,7 @@ class EmployeeUserFactory(
         personalressursResourceCache.allDistinct
             .filter { employee ->
                 if (employee.arbeidsforhold.isNullOrEmpty()) {
-                    logger.warn("Skipping employee without arbeidsforhold: resourceId={}", FintLinkUtils.resourceId(employee))
+                    logger.warn("Employee: Skipping user without arbeidsforhold: resourceId={}", FintLinkUtils.resourceId(employee))
                     false
                 } else {
                     true
@@ -43,7 +43,7 @@ class EmployeeUserFactory(
         now: Date,
     ): UserCandidate? {
         val resourceId = FintLinkUtils.resourceId(employee)
-        var tempStatus: String? = null
+        var tempFINTStatus: String? = null
         val person =
             employee.person
                 .firstOrNull()
@@ -51,13 +51,13 @@ class EmployeeUserFactory(
                 ?.let(FintLinkUtils::getSystemIdFromMessageKey)
                 ?.let { personResourceCache.getOptional(it).orElse(null) }
                 ?: run {
-                    logger.warn("Person not found for resourceId: $resourceId . User not created")
+                    logger.warn("Employee: Person not found for resourceId: $resourceId . User not created")
                     return null
                 }
 
         val entraAttributes =
             entraUserService.getEntraAttributes(resourceId) ?: run {
-                logger.warn("Entra user not found for resourceId: $resourceId")
+                logger.warn("Employee: Entra user not found for resourceId: $resourceId . User status set to INVALID")
                 EntraAttributes(
                     email = null,
                     userName = null,
@@ -78,8 +78,8 @@ class EmployeeUserFactory(
             employments.firstOrNull { it.hovedstilling == true }
                 ?: employments.maxByOrNull { it.ansettelsesprosent ?: 0L }
                 ?: run {
-                    logger.warn("No main employment posision found for resourceId: $resourceId . Status set to INVALID")
-                    tempStatus = UserStatus.INVALID
+                    logger.warn("Employee: No main employment posision found for resourceId: $resourceId . Status set to INVALID")
+                    tempFINTStatus = UserStatus.INVALID
                     ArbeidsforholdResource()
                 }
 
@@ -88,7 +88,7 @@ class EmployeeUserFactory(
         val managerRef = mainWorkPlace?.leder?.firstOrNull()?.href
         val period = employee.ansettelsesperiode
         val fintStatus =
-            tempStatus ?: if (gyldighetsPeriodeService.isValid(
+            tempFINTStatus ?: if (gyldighetsPeriodeService.isValid(
                     period,
                     now,
                     daysBeforeStart,
