@@ -12,6 +12,7 @@ import no.novari.fint.model.resource.utdanning.elev.SkoleressursResource
 import no.novari.fint.model.resource.utdanning.utdanningsprogram.SkoleResource
 import no.novari.fintkontrolluserservice.entra.EntraUser
 import no.novari.fintkontrolluserservice.entra.EntraUserExternal
+import no.novari.fintkontrolluserservice.entra.EntraUserPayload
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import java.util.Locale
@@ -46,7 +47,10 @@ class CacheConfiguration(
     fun ansattSkoleressursResourceCache(): FintCache<String, SkoleressursResource> = createCache(SkoleressursResource::class.java)
 
     @Bean
-    fun graphUserCache(): FintCache<String, EntraUser> = createCache(EntraUser::class.java)
+    fun entraUserPayloadCache(): FintCache<String, EntraUserPayload> = createCache(EntraUserPayload::class.java)
+
+    @Bean
+    fun entraUserCache(): FintCache<String, EntraUser> = createCache(EntraUser::class.java)
 
     @Bean
     fun graphUserExternalCache(): FintCache<String, EntraUserExternal> = createCache(EntraUserExternal::class.java)

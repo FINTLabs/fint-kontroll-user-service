@@ -45,7 +45,7 @@ class UserPublisher(
     }
 
     fun publish(user: User) {
-        logger.info("Publishing kontrolluser resourceId={}, status={}", user.resourceId, user.status)
+        logger.debug("Publishing kontrolluser resourceId={}, status={}", user.resourceId, user.status)
         template.send(
             ParameterizedProducerRecord
                 .builder<User>()

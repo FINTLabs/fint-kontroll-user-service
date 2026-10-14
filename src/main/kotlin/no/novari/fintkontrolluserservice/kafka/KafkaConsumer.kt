@@ -11,6 +11,8 @@ import no.novari.fint.model.resource.utdanning.elev.SkoleressursResource
 import no.novari.fint.model.resource.utdanning.utdanningsprogram.SkoleResource
 import no.novari.fintkontrolluserservice.entra.EntraUser
 import no.novari.fintkontrolluserservice.entra.EntraUserExternal
+import no.novari.fintkontrolluserservice.entra.EntraUserPayload
+import no.novari.fintkontrolluserservice.user.EntraUserService
 import no.novari.fintkontrolluserservice.user.ExternalUserService
 import no.novari.fintkontrolluserservice.user.UserService
 import org.slf4j.LoggerFactory
@@ -30,8 +32,10 @@ class KafkaConsumer(
     private val elevforholdCache: FintCache<String, ElevforholdResource>,
     private val skoleResourceCache: FintCache<String, SkoleResource>,
     private val ansattSkoleressursResourceCache: FintCache<String, SkoleressursResource>,
-    private val graphUserCache: FintCache<String, EntraUser>,
+    private val entraUserCache: FintCache<String, EntraUser>,
+    private val entraUserPayloadCache: FintCache<String, EntraUserPayload>,
     private val graphUserExternalCache: FintCache<String, EntraUserExternal>,
+    private val entraUserService: EntraUserService,
     private val userService: UserService,
     private val externalUserService: ExternalUserService,
 ) {
@@ -143,21 +147,27 @@ class KafkaConsumer(
     fun entraUserConsumer() =
         containerFactory.createContainer(
             topicName = "graph-user",
-            consumingClass = EntraUser::class,
-            cache = graphUserCache,
+            consumingClass = EntraUserPayload::class,
+            cache = entraUserPayloadCache,
             handler = { key, value ->
                 if (value == null) {
-                    graphUserCache.allDistinct
-                        .filter { it.id == key }
+                    entraUserCache.allDistinct
+                        .filter { user -> user.id == key }
                         .forEach { user ->
                             listOfNotNull(user.employeeId, user.studentId).forEach { resourceId ->
-                                graphUserCache.remove(resourceId)
+                                entraUserCache.remove(resourceId)
                                 userService.markDeleted(resourceId)
                             }
                         }
+                    logger.info("Received tombstone for user with entra objectId: $key")
                 } else {
-                    value.employeeId?.let { graphUserCache.put(it, value) }
-                    value.studentId?.let { graphUserCache.put(it, value) }
+                    val entraUser = entraUserService.fromPayload(key, value)
+                    if (entraUserService.getEmployeeOrStudentId(entraUser) == null) {
+                        logger.warn("User missing employeeId or studentId: ${entraUser.userPrincipalName} and will not be processed")
+                    }
+                    listOfNotNull(entraUser.employeeId, entraUser.studentId).forEach { resourceId ->
+                        entraUserCache.put(resourceId, entraUser)
+                    }
                     logger.debug("Consumed:: entra user :: $key :: ${value.userPrincipalName}")
                 }
             },

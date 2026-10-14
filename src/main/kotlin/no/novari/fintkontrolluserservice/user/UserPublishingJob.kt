@@ -28,7 +28,7 @@ class UserPublishingJob(
         (employees + students).forEach(userService::saveAndPublish)
         val disabled = userService.deactivateExpiredUsers()
         logger.info(
-            "Reconciled {} employees, {} students; disabled {} expired users",
+            "Reconciled {} employees, {} students, {} disabled users",
             employees.size,
             students.size,
             disabled.size,
