@@ -166,6 +166,7 @@ class KafkaConsumer(
                         logger.warn("User missing employeeId or studentId: ${entraUser.userPrincipalName} and will not be processed")
                     }
                     listOfNotNull(entraUser.employeeId, entraUser.studentId).forEach { resourceId ->
+                        // TODO: Consider start an update and not only persist to cache
                         entraUserCache.put(resourceId, entraUser)
                     }
                     logger.debug("Consumed:: entra user :: $key :: ${value.userPrincipalName}")
